@@ -3,6 +3,13 @@
 import sys
 import re
 
+def catch(func):
+    try:
+        return func()
+    except Exception, e:
+        print >> sys.stderr, str(e)
+    return None
+
 def main():
     pre, body, post = '', '', ''
     if len(sys.argv) == 2:
@@ -18,7 +25,10 @@ def main():
     exec(pre)
     for line in sys.stdin:
         line = line.strip('\n')
-        exec(body)
+        try:
+            exec(body)
+        except Exception, e:
+            print >> sys.stderr, str(e)
     exec(post)
 
 if __name__ == '__main__':
