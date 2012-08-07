@@ -56,6 +56,8 @@ def main():
         print >> sys.stderr, '    %s PRE BODY POST' % (sys.argv[0],)
         print >> sys.stderr, '    %s BODY' % (sys.argv[0],)
         sys.exit(1)
+    # Replace ;; with newlines to simplify writing complex statements
+    pre, body, post = [expr.replace(';;', '\n') for expr in pre, body, post]
 
     # Utility print function
     def p(*args):
