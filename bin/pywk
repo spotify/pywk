@@ -73,13 +73,13 @@ def main():
     body_code = compile(body, '<pywk>', 'exec')
 
     for line in sys.stdin:
+        splitter['NR'] += 1
         splitter['line'] = line.rstrip('\n')
         try:
             exec(body_code, globals(), splitter)
         except Exception, e:
             print >> sys.stderr, str(e)
         splitter.parts = None
-        splitter['NR'] += 1
     exec(post, globals(), splitter)
 
 if __name__ == '__main__':
