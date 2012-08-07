@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import collections
 import sys
 import re
 
@@ -9,6 +10,35 @@ def catch(func):
     except Exception, e:
         print >> sys.stderr, str(e)
     return None
+
+class Splitter(collections.defaultdict):
+    """ Awk-like variables names:
+    _1, _2, ... for parts of the line split by field separator FS
+    _0 for the whole line
+    _ for the list of [line, _1, _2, ...] (so _[1] == _1, etc, useful for slicing)
+    for example: p(_1, *_[4:7])
+    """
+    parts = None
+    def __init__(self, *args, **kwargs):
+        collections.defaultdict.__init__(self, None, *args, **kwargs)
+    def __missing__(self, key):
+        if self.parts is None:
+            self.parts = self['line'].split(self['FS'])
+        if key == '_':
+            return [self['line']] + self.parts
+        if key.startswith('_'):
+            try:
+                n = int(key[1:])
+                if n > 0:
+                    if n <= len(self.parts):
+                        return self.parts[n - 1]
+                    else:
+                        return ''
+                elif n == 0:
+                    return self.parts
+            except ValueError, e:
+                pass
+        raise KeyError(key)
 
 def main():
     pre, body, post = '', '', ''
@@ -22,14 +52,26 @@ def main():
         print >> sys.stderr, '    %s BODY' % (sys.argv[0],)
         sys.exit(1)
 
-    exec(pre)
+    # Utility print function
+    def p(*args):
+        print ' '.join(args)
+
+    FS = None  # Field separator, like in awk
+    line = None
+    splitter = Splitter(locals())
+
+    exec(pre, globals(), splitter)
+
+    body_code = compile(body, '<pywk>', 'exec')
+
     for line in sys.stdin:
-        line = line.strip('\n')
+        splitter['line'] = line.rstrip('\n')
         try:
-            exec(body)
+            exec(body_code, globals(), splitter)
         except Exception, e:
             print >> sys.stderr, str(e)
-    exec(post)
+        splitter.parts = None
+    exec(post, globals(), splitter)
 
 if __name__ == '__main__':
     main()
