@@ -15,6 +15,8 @@ class Splitter(collections.defaultdict):
     """ Awk-like variables names:
     _1, _2, ... for parts of the line split by field separator FS
     _0 for the whole line
+    NF for the number of fields and _NF for the last field
+    NR for the number of records (implemented in main)
     _ for the list of [line, _1, _2, ...] (so _[1] == _1, etc, useful for slicing)
     for example: p(_1, *_[4:7])
     """
@@ -37,7 +39,10 @@ class Splitter(collections.defaultdict):
                 elif n == 0:
                     return self.parts
             except ValueError, e:
-                pass
+                if key == '_NF':
+                    return self.parts[-1]
+        if key == 'NF':
+            return len(self.parts)
         raise KeyError(key)
 
 def main():
@@ -57,6 +62,7 @@ def main():
         print ' '.join(args)
 
     FS = None  # Field separator, like in awk
+    NR = 0     # Number of Records
     line = None
     splitter = Splitter(locals())
 
@@ -71,6 +77,7 @@ def main():
         except Exception, e:
             print >> sys.stderr, str(e)
         splitter.parts = None
+        splitter['NR'] += 1
     exec(post, globals(), splitter)
 
 if __name__ == '__main__':
