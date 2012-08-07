@@ -24,10 +24,10 @@ class Splitter(collections.defaultdict):
     def __init__(self, *args, **kwargs):
         collections.defaultdict.__init__(self, None, *args, **kwargs)
     def __missing__(self, key):
-        if self.parts is None:
+        if self.parts is None and self['line']:
             self.parts = self['line'].split(self['FS'])
         if key == '_':
-            return [self['line']] + self.parts
+            return tuple([self['line']] + self.parts)
         if key.startswith('_'):
             try:
                 n = int(key[1:])
