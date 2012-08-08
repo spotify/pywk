@@ -12,13 +12,9 @@ def catch(func):
     return None
 
 class Splitter(collections.defaultdict):
-    """ Awk-like variables names:
-    _1, _2, ... for parts of the line split by field separator FS
-    _0 for the whole line
-    NF for the number of fields and _NF for the last field
-    NR for the number of records (implemented in main)
-    _ for the list of [line, _1, _2, ...] (so _[1] == _1, etc, useful for slicing)
-    for example: p(_1, *_[4:7])
+    """ Split the line on-demand, when awk-like variables are requested.
+    The following variables are generated: _, _0, _1, _2, ..., NF, _NF
+    (FS and NR are set in main() below)
     """
     parts = None
     def __init__(self, *args, **kwargs):
