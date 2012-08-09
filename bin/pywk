@@ -11,6 +11,55 @@ def catch(func):
         print >> sys.stderr, str(e)
     return None
 
+def pattern_expand(body):
+    """ Awk-like pattern expander """
+    # HACK: Check body for awk-like patterns by assuming a python syntax error
+    try:
+        compile(body, '<pywk-syntax-check>', 'exec')
+        return body
+    except SyntaxError, e:
+        pass
+    #PAT = re.compile(r'([^{]*){([^}]+)}(.*)', re.S)
+    def find_group(s): # match braces
+        i = 0
+        depth = 0
+        first = None
+        for c in s:
+            if c == '{':
+                if depth == 0:
+                    first = i
+                depth += 1
+            elif c == '}':
+                depth -= 1
+                if depth == 0:
+                    return s, s[:first], s[first + 1:i], s[i + 1:]
+            i += 1
+        return None
+    ret = ''
+    while True:
+        #m = PAT.match(body)
+        m = find_group(body)
+        if not m:
+            ret += body
+            break
+        pat = m[1].strip() or 'True'
+        block = '\n'.join(' ' + s for s in m[2].strip().split('\n'))
+        body = m[3]
+        inv = pat.startswith('!') and 'not ' or ''
+        if inv:
+            pat = pat[1:].lstrip()
+        if pat.startswith('/') and pat.endswith('/'):
+            ret += "if " + inv + "re.search(r'" + pat[1:-1] + "', line):\n"
+            ret += block + '\n'
+        else:
+            ret += "if " + inv + pat + ":\n" + block + '\n'
+    # debug feature
+    if ret.endswith('?'):
+        print 'Expanded body:'
+        print ret[:-1]
+        sys.exit(1)
+    return ret
+
 class Splitter(collections.defaultdict):
     """ Split the line on-demand, when awk-like variables are requested.
     The following variables are generated: _, _0, _1, _2, ..., NF, _NF
@@ -66,6 +115,9 @@ The variable _ is the list of [line, _1, _2, ...], useful for slicing.
 The function p prints its arguments joined by the output field separator OFS.
 To simplify writing complex statements, ';;' is replaced by newline.
 
+Awk-like patterns of /regex/ { } or python expression { } form can be used.
+Append a '?' to the body to see the expansion for debugging.
+
 Examples:
   # print line number, number of :-separated fields, and the first and last one:
   pywk 'FS=":"' 'print NR, FS, _1, _FS' ''
@@ -73,21 +125,25 @@ Examples:
   pywk 'p(_1, *_[3:8])'
   # reverse every other line
   pywk 'if NR % 2: print line;;else: print "".join(reversed(line))'
+  # print lines missing x or with more x:s than y:x
+  pywk '! /x/ { p(line) }  line.count("x") > line.count("y") { p(line) }'
 '''
         sys.exit(1)
     # Replace ;; with newlines to simplify writing complex statements
     pre, body, post = [expr.replace(';;', '\n') for expr in pre, body, post]
-
-    # Utility print function
-    def p(*args):
-        print ' '.join(args)
+    # Support awk-like pattern matching blocks
+    body = pattern_expand(body)
 
     FS = None  # Field separator, like in awk
     NR = 0     # Number of Records
     line = None
+    OFS = ' '
+    # Utility print function
+    def p(*args):
+        print splitter['OFS'].join(map(str, args))
     splitter = Splitter(locals())
 
-    exec(pre, globals(), splitter)
+    exec pre in globals(), splitter
 
     body_code = compile(body, '<pywk>', 'exec')
 
@@ -95,11 +151,11 @@ Examples:
         splitter['NR'] += 1
         splitter['line'] = line.rstrip('\n')
         try:
-            exec(body_code, globals(), splitter)
+            exec body_code in globals(), splitter
         except Exception, e:
             print >> sys.stderr, str(e)
         splitter.parts = None
-    exec(post, globals(), splitter)
+    exec post in globals(), splitter
 
 if __name__ == '__main__':
     main()
