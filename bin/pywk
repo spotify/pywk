@@ -125,7 +125,7 @@ Examples:
   pywk 'p(_1, *_[3:8])'
   # reverse every other line
   pywk 'if NR % 2: print line;;else: print "".join(reversed(line))'
-  # print lines missing x or with more x:s than y:x
+  # print lines missing x or with more x:s than y:s
   pywk '! /x/ { p(line) }  line.count("x") > line.count("y") { p(line) }'
 '''
         sys.exit(1)
