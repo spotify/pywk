@@ -16,7 +16,7 @@ The following awk-like variables are available:
   _0 for the whole line
   NF for the number of fields and _NF for the last field
   NR for the number of records
-The variable _ is the list of [line, _1, _2, ...], useful for slicing.
+The variable _ is a tuple of (line, _1, _2, ...), useful for slicing.
 The function p prints its arguments joined by the output field separator OFS.
 To simplify writing complex statements, ';;' is replaced by newline.
 
