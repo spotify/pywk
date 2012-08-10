@@ -3,6 +3,7 @@ pywk
 
 Python awk-like line processing tool
 
+```
 usage:
     pywk PRE BODY POST
     pywk BODY
@@ -31,3 +32,4 @@ Examples:
   pywk 'if NR % 2: print line;;else: print "".join(reversed(line))'
   # print lines missing x or with more x:s than y:s
   pywk '! /x/ { p(line) }  line.count("x") > line.count("y") { p(line) }'
+```
