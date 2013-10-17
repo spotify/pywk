@@ -33,3 +33,8 @@ Examples:
   # print lines missing x or with more x:s than y:s
   pywk '! /x/ { p(line) }  line.count("x") > line.count("y") { p(line) }'
 ```
+
+### License
+
+pywk is Copyright Spotify AB and released under the the terms of the
+Apache 2.0 License.
